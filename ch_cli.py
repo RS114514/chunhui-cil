@@ -179,6 +179,56 @@ def clean_html(text):
             non_empty.append("")
     return '\n'.join(non_empty).strip()
 
+def extract_attachment_links(html_content):
+    attachment_links = []
+    links = re.findall(r'href=["\'](.*?)["\']', html_content)
+    for link in links:
+        link_clean = link.strip()
+        if not link_clean or link_clean == "#" or "javascript:" in link_clean:
+            continue
+        lower_link = link_clean.lower()
+        is_file = any(ext in lower_link for ext in ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx', '.zip', '.rar', '.png', '.jpg', '.txt', '.mp4'])
+        if is_file or "/fileaccess/" in link_clean:
+            if "Logo" in link_clean or "newFunc" in link_clean or "sydw" in link_clean:
+                continue
+            full_url = link_clean
+            if not link_clean.startswith("http"):
+                if link_clean.startswith("/"):
+                    full_url = f"{BASE_URL}{link_clean}"
+                else:
+                    full_url = f"{BASE_URL}/{link_clean}"
+            if full_url not in attachment_links:
+                attachment_links.append(full_url)
+    return attachment_links
+
+def download_attachments(attachment_links, out_dir="."):
+    if not attachment_links:
+        log_warn("该详情页面中未检测到任何可供下载的附件或多媒体。")
+        return
+        
+    log_info(f"发现 {len(attachment_links)} 个可供下载的文件，开始下载...")
+    for i, att_url in enumerate(attachment_links):
+        filename = att_url.split('/')[-1].split('?')[0]
+        filename = urllib.parse.unquote(filename)
+        if not filename:
+            filename = f"attachment_{i+1}"
+        
+        if out_dir != ".":
+            os.makedirs(out_dir, exist_ok=True)
+        target_path = os.path.join(out_dir, filename)
+        
+        log_info(f"正在下载第 {i+1}/{len(attachment_links)} 个文件: {filename} ...")
+        status_dl, body_dl, _ = make_request(att_url, method="GET")
+        if status_dl == 200:
+            try:
+                with open(target_path, "wb") as f_dl:
+                    f_dl.write(body_dl)
+                log_success(f"已成功保存至: {target_path} (大小: {len(body_dl)} 字节)")
+            except Exception as e_dl:
+                log_error(f"保存文件 {target_path} 失败: {e_dl}")
+        else:
+            log_error(f"下载文件 {filename} 失败 (HTTP Code: {status_dl})")
+
 def draw_table(headers, col_widths, rows):
     print(f"{C_BLUE}┌" + "┬".join("─" * w for w in col_widths) + f"┐{C_RESET}")
     header_padded = [pad_text(headers[i], col_widths[i]) for i in range(len(headers))]
@@ -463,33 +513,7 @@ def cmd_messages(args):
             print(f"{C_BLUE}──────────────────────────────────────────────────{C_RESET}")
             
         if args.download:
-            if not attachment_links:
-                log_warn("该消息详情中未检测到任何可供下载的附件。")
-            else:
-                log_info(f"发现 {len(attachment_links)} 个附件，开始下载...")
-                for i, att_url in enumerate(attachment_links):
-                    filename = att_url.split('/')[-1].split('?')[0]
-                    filename = urllib.parse.unquote(filename)
-                    if not filename:
-                        filename = f"attachment_{i+1}"
-                    
-                    # 确定下载保存路径
-                    out_dir = args.out if getattr(args, 'out', None) else "."
-                    if out_dir != ".":
-                        os.makedirs(out_dir, exist_ok=True)
-                    target_path = os.path.join(out_dir, filename)
-                    
-                    log_info(f"正在下载第 {i+1}/{len(attachment_links)} 个文件: {filename} ...")
-                    status_dl, body_dl, _ = make_request(att_url, method="GET")
-                    if status_dl == 200:
-                        try:
-                            with open(target_path, "wb") as f_dl:
-                                f_dl.write(body_dl)
-                            log_success(f"已成功保存至: {target_path} (大小: {len(body_dl)} 字节)")
-                        except Exception as e_dl:
-                            log_error(f"保存文件 {target_path} 失败: {e_dl}")
-                    else:
-                        log_error(f"下载文件 {filename} 失败 (HTTP Code: {status_dl})")
+            download_attachments(attachment_links, args.out)
             print()
         return
 
@@ -588,7 +612,11 @@ def cmd_hygiene(args):
             print(f"{C_BLUE}──────────────────────────────────────────────────{C_RESET}")
         print(f"{C_BOLD}关联收件人：{C_RESET} {recipients_all}")
         print(f"{C_BOLD}未阅收件人：{C_RESET} {C_RED}{recipients_unread}{C_RESET}")
-        print()
+        print(f"{C_BLUE}──────────────────────────────────────────────────{C_RESET}")
+        
+        if args.download:
+            download_attachments(media_urls, args.out)
+            print()
         return
 
     page = args.page or 1
@@ -915,7 +943,21 @@ def cmd_news(args):
         print(f"{C_BOLD}发布人：{C_RESET} {C_CYAN}{source}{C_RESET}    |    {C_BOLD}时间：{C_RESET} {C_GREY}{pub_time}{C_RESET}")
         print(f"{C_BLUE}──────────────────────────────────────────────────{C_RESET}")
         print(f"{content}")
-        print(f"{C_BLUE}──────────────────────────────────────────────────{C_RESET}\n")
+        print(f"{C_BLUE}──────────────────────────────────────────────────{C_RESET}")
+        
+        attachment_links = extract_attachment_links(html_content)
+        if attachment_links:
+            print(f"{C_BOLD}{C_GREEN}📎 关联附件列表：{C_RESET}")
+            for i, att_url in enumerate(attachment_links):
+                filename = att_url.split('/')[-1].split('?')[0]
+                filename = urllib.parse.unquote(filename)
+                print(f"  [{i+1}] {C_YELLOW}{filename}{C_RESET}")
+                print(f"      链接: {C_CYAN}{att_url}{C_RESET}")
+            print(f"{C_BLUE}──────────────────────────────────────────────────{C_RESET}")
+            
+        if args.download:
+            download_attachments(attachment_links, args.out)
+            print()
         return
 
     # 栏目映射支持
@@ -1091,6 +1133,28 @@ def cmd_lostfound(args):
         if content_m:
             content = clean_html(content_m.group(1))
             
+        # 提取招领中关联的图片/视频等多媒体
+        media_urls = []
+        imgs = re.findall(r'<img[^>]+src=["\'](.*?)["\']', html_content)
+        for img in imgs:
+            if "Logo" not in img and "newFunc" not in img and "sydw" not in img:
+                if not img.startswith("http") and img.startswith("/"):
+                    media_urls.append(f"{BASE_URL}{img}")
+                else:
+                    media_urls.append(img)
+                    
+        vids = re.findall(r'<video[^>]+src=["\'](.*?)["\']', html_content)
+        for vid in vids:
+            if not vid.startswith("http") and vid.startswith("/"):
+                media_urls.append(f"{BASE_URL}{vid}")
+            else:
+                media_urls.append(vid)
+
+        attachment_links = extract_attachment_links(html_content)
+        for link in attachment_links:
+            if link not in media_urls:
+                media_urls.append(link)
+
         print(f"\n{C_BOLD}{C_GREEN}🔍 失物招领详情 {C_RESET}")
         print(f"{C_BLUE}──────────────────────────────────────────────────{C_RESET}")
         print(f"{C_BOLD}物品主题：{C_RESET} {C_YELLOW}{title}{C_RESET}")
@@ -1098,7 +1162,17 @@ def cmd_lostfound(args):
         print(f"{C_BOLD}审 核 人：{C_RESET} {reviewer}")
         print(f"{C_BLUE}──────────────────────────────────────────────────{C_RESET}")
         print(f"{content}")
-        print(f"{C_BLUE}──────────────────────────────────────────────────{C_RESET}\n")
+        print(f"{C_BLUE}──────────────────────────────────────────────────{C_RESET}")
+        
+        if media_urls:
+            print(f"{C_BOLD}📎 关联文件或多媒体：{C_RESET}")
+            for i, m_url in enumerate(media_urls):
+                print(f"  [{i+1}] {C_CYAN}{m_url}{C_RESET}")
+            print(f"{C_BLUE}──────────────────────────────────────────────────{C_RESET}")
+            
+        if args.download:
+            download_attachments(media_urls, args.out)
+            print()
         return
 
     page = args.page or 1
@@ -1227,6 +1301,8 @@ def main():
     parser_hyg = subparsers.add_parser("hygiene", help="查询纪律卫生考评记录")
     parser_hyg.add_argument("--page", type=int, default=1, help="页码")
     parser_hyg.add_argument("--show", type=int, help="要查看的考评详情 ID")
+    parser_hyg.add_argument("--download", "-d", action="store_true", help="是否下载该考评详情关联的多媒体")
+    parser_hyg.add_argument("--out", type=str, default=".", help="指定多媒体文件的下载保存目录")
 
     # duty command
     parser_duty = subparsers.add_parser("duty", help="查询教师值周安排")
@@ -1251,6 +1327,8 @@ def main():
     parser_news.add_argument("--column", type=str, default="16", help="栏目ID或别名 (13=新闻聚焦, 16=通知公告, 19=校内公示, 51=值周小结)")
     parser_news.add_argument("--page", type=int, default=1, help="页码")
     parser_news.add_argument("--show", type=int, help="要阅读的文章 ID")
+    parser_news.add_argument("--download", "-d", action="store_true", help="是否下载该文章包含的所有附件")
+    parser_news.add_argument("--out", type=str, default=".", help="指定附件的下载保存目录")
 
     # bedroom command
     parser_bed = subparsers.add_parser("bedroom", help="查询班级寝室与宿舍卫生考评")
@@ -1272,6 +1350,8 @@ def main():
     parser_lf = subparsers.add_parser("lostfound", aliases=["lf"], help="查询校园失物招领")
     parser_lf.add_argument("--page", type=int, default=1, help="页码")
     parser_lf.add_argument("--show", type=int, help="要查看的失物招领详情 ID")
+    parser_lf.add_argument("--download", "-d", action="store_true", help="是否下载该失物招领关联的图片或多媒体附件")
+    parser_lf.add_argument("--out", type=str, default=".", help="指定文件的下载保存目录")
 
     args = parser.parse_args()
 
