@@ -1184,6 +1184,10 @@ def cmd_status(args):
     check_login_status()
 
 def main():
+    for idx, arg in enumerate(sys.argv):
+        if arg == "?":
+            sys.argv[idx] = "-h"
+
     parser = argparse.ArgumentParser(
         description=f"{C_BOLD}{C_CYAN}浙江省春晖中学校园网 CLI 工具 (ch_cli){C_RESET}",
         formatter_class=argparse.RawDescriptionHelpFormatter

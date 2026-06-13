@@ -3,6 +3,8 @@ __pycache__/
 *.pyc
 *.zip
 *.pptx
+*.mp4
+*.avi
 file_download_test/
 test_dir/
 scratch/**/*.html
