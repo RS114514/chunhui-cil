@@ -157,8 +157,8 @@ python3 ch_cli.py login
 
 ### 1. 绿色便携版（推荐，百分百内置独立 Python 运行时）
 本版本专为没有安装任何 Python 解释器、且可能缺少 MSVC++ 运行依赖库的 Windows 主机设计。它直接封装了官方纯净的嵌入式 Python 运行时解释器，防误报且 100% 独立于系统环境。
-- 前往 GitHub 仓库的 **Actions** 页面，点击最新一次成功的运行记录（通常名为 *Build Executable*）。
-- 滚动至页面底部的 **Artifacts** 区域，点击下载 `chunhui-cil-portable` 压缩包。
+- 前往 GitHub 仓库的 **Releases**（发布）页面。
+- 在最新的 `Latest Release` 下，直接下载 **`chunhui-cil-portable.zip`**。
 - 将压缩包完整解压至任意目录，双击或在命令行（CMD/PowerShell）中运行目录下的 `chunhui-cil.bat` 即可直接使用：
   ```cmd
   chunhui-cil.bat messages
@@ -166,8 +166,7 @@ python3 ch_cli.py login
 
 ### 2. 单文件版 (`chunhui-cil.exe`)
 由 PyInstaller 编译的单个独立 EXE 文件，轻量化。
-- 前往 GitHub 仓库的 **Actions** 页面，点击最新一次成功的运行记录。
-- 滚动至页面底部下载 `chunhui-cil-windows` 压缩包，解压后即可直接独立使用。
+- 前往 GitHub 仓库的 **Releases**（发布）页面，直接下载 **`chunhui-cil.exe`** 即可直接独立使用。
 
 ### 3. 在 Windows 本地手动打包
 若要在本地电脑上自行打包成 `.exe`：

@@ -1,9 +1,12 @@
-name: Build Executable
+name: Build and Release Executable
 
 on:
   push:
     branches: [ main ]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build-windows:
@@ -42,6 +45,12 @@ jobs:
         # 清理临时文件
         Remove-Item -Path "python-embed.zip"
 
+    - name: Compress Portable Package for Release
+      shell: pwsh
+      run: |
+        # 将便携包目录压缩为 zip 方便作为 Release Assets 上传
+        Compress-Archive -Path dist/chunhui-cil-portable/* -DestinationPath dist/chunhui-cil-portable.zip
+
     - name: Upload Single Executable Artifact
       uses: actions/upload-artifact@v4
       with:
@@ -53,3 +62,22 @@ jobs:
       with:
         name: chunhui-cil-portable
         path: dist/chunhui-cil-portable
+
+    - name: Create or Update GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: latest
+        name: Latest Release (Auto Build)
+        body: |
+          春晖中学校园网命令行工具最新的 Windows 可执行程序发行版。
+          
+          ### 📦 包含资源：
+          - **`chunhui-cil.exe`**: 轻量化单文件可执行文件（双击即可启动命令行，不需要任何 Python 环境）。
+          - **`chunhui-cil-portable.zip`**: 内置了官方 Python 运行时的绿色免安装便携版。适用于单文件版因 DLL 缺失报错的主机。解压缩后在 CMD/PowerShell 下运行 `chunhui-cil.bat` 启动。
+        draft: false
+        prerelease: true
+        files: |
+          dist/chunhui-cil.exe
+          dist/chunhui-cil-portable.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
