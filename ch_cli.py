@@ -528,9 +528,11 @@ def cmd_messages(args):
         return
         
     print(f"\n{C_BOLD}{C_GREEN}✉ 收件箱列表 (第 {page} 页) ==={C_RESET}")
-    headers = ["消息 ID", "标题", "发送人", "时间"]
-    col_widths = [10, 40, 12, 14]
-    draw_table(headers, col_widths, rows)
+    for row in rows:
+        msg_id, title, sender, date = row
+        print(f"[{C_GREEN}{msg_id}{C_RESET}] {C_BOLD}{title}{C_RESET}")
+        print(f"      发送人: {C_CYAN}{sender}{C_RESET}  |  时间: {C_GREY}{date}{C_RESET}")
+        print(f"      {C_BLUE}┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄{C_RESET}")
     print(f"{C_GREY}提示: 使用 `python3 ch_cli.py messages --show <消息ID>` 查看消息正文详情。{C_RESET}\n")
 
 def cmd_hygiene(args):
@@ -620,9 +622,11 @@ def cmd_hygiene(args):
         return
         
     print(f"\n{C_BOLD}{C_GREEN}⚠ 纪律卫生考评记录 (第 {page} 页) ==={C_RESET}")
-    headers = ["记录 ID", "检查地点", "违纪描述", "检查日期"]
-    col_widths = [10, 16, 40, 14]
-    draw_table(headers, col_widths, rows)
+    for row in rows:
+        record_id, location, description, date = row
+        print(f"[{C_GREEN}{record_id}{C_RESET}] 地点: {C_YELLOW}{location}{C_RESET}  |  检查日期: {C_GREY}{date}{C_RESET}")
+        print(f"      描述: {description}")
+        print(f"      {C_BLUE}┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄{C_RESET}")
     print(f"{C_GREY}提示: 使用 `python3 ch_cli.py hygiene --show <记录ID>` 查看多媒体附件及关联收件人。{C_RESET}\n")
 
 def cmd_duty(args):
@@ -703,15 +707,13 @@ def cmd_duty(args):
 
     if args.all:
         print(f"\n{C_BOLD}{C_GREEN}=== 浙江省春晖中学值周排班总表 ==={C_RESET}")
-        headers = ["周次", "日期范围", "行政值周", "值周班级"]
-        col_widths = [24, 30, 12, 16]
-        rows = []
         for d in duties:
             week_disp = d["week"]
-            if d["is_current"]:
-                week_disp = f"★ {week_disp}"
-            rows.append([week_disp, d["date"], d["admin"], d["class"]])
-        draw_table(headers, col_widths, rows)
+            week_color = C_GREEN if d["is_current"] else C_CYAN
+            curr_mark = "★ " if d["is_current"] else ""
+            print(f"{C_BOLD}{week_color}{curr_mark}{week_disp}{C_RESET} ({C_GREY}{d['date']}{C_RESET})")
+            print(f"  行政值周: {C_YELLOW}{d['admin']}{C_RESET}  |  值周班级: {C_GREEN}{d['class']}{C_RESET}")
+            print(f"  {C_BLUE}┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄{C_RESET}")
         print(f"{C_GREY}提示: 带 ★ 的代表当前周次。使用 `python3 ch_cli.py duty --search <姓名>` 可模糊搜索。{C_RESET}\n")
         return
 
@@ -943,9 +945,11 @@ def cmd_news(args):
         rows.append([art_id, clean_html(title), clean_html(date)])
         
     print(f"\n{C_BOLD}{C_GREEN}📄 文章列表 (栏目: {args.column}, 第 {page} 页) ==={C_RESET}")
-    headers = ["文章 ID", "标题", "发布日期"]
-    col_widths = [10, 48, 14]
-    draw_table(headers, col_widths, rows)
+    for row in rows:
+        art_id, title, date = row
+        print(f"[{C_GREEN}{art_id}{C_RESET}] {C_BOLD}{title}{C_RESET}")
+        print(f"      发布日期: {C_GREY}{date}{C_RESET}")
+        print(f"      {C_BLUE}┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄{C_RESET}")
     print(f"{C_GREY}提示: 使用 `python3 ch_cli.py news --show <文章ID>` 阅读正文内容。{C_RESET}\n")
 
 def cmd_bedroom(args):
@@ -1045,9 +1049,11 @@ def cmd_bedroom(args):
             return
             
         print(f"\n{C_BOLD}{C_GREEN}🧹 {dorm_name} 寝室卫生与纪律扣分考评总表 ==={C_RESET}")
-        headers = ["寝室", "班级", "卫生扣分", "纪律扣分", "合计"]
-        col_widths = [10, 16, 10, 10, 10]
-        draw_table(headers, col_widths, rows)
+        for row in rows:
+            room, cls, hyg, disc, total = row
+            print(f"寝室: {C_GREEN}{C_BOLD}{room}{C_RESET} ({cls})")
+            print(f"  卫生扣分: {C_RED}{hyg}{C_RESET}  |  纪律扣分: {C_RED}{disc}{C_RESET}  |  合计扣分: {C_YELLOW}{total}{C_RESET}")
+            print(f"  {C_BLUE}┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄{C_RESET}")
         print()
 
 def cmd_lostfound(args):
@@ -1128,9 +1134,13 @@ def cmd_lostfound(args):
         return
         
     print(f"\n{C_BOLD}{C_GREEN}🔍 全校失物招领列表 (第 {page} 页) ==={C_RESET}")
-    headers = ["ID", "类别", "物品名称", "发布处", "发布日期", "状态"]
-    col_widths = [8, 8, 20, 16, 12, 16]
-    draw_table(headers, col_widths, rows)
+    for row in rows:
+        lf_id, category, title, reporter, start_date, status_text = row
+        cat_color = C_YELLOW if "丢" in category else C_GREEN
+        status_color = C_RED if "未" in status_text or "处理中" in status_text else C_GREY
+        print(f"[{C_GREEN}{lf_id}{C_RESET}] {C_BOLD}{cat_color}[{category}]{C_RESET} {title}")
+        print(f"      发布处: {C_CYAN}{reporter}{C_RESET}  |  日期: {C_GREY}{start_date}{C_RESET}  |  状态: {status_color}{status_text}{C_RESET}")
+        print(f"      {C_BLUE}┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄{C_RESET}")
     print(f"{C_GREY}提示: 使用 `python3 ch_cli.py lostfound --show <ID>` 查看招领联系方式等详情。{C_RESET}\n")
 
 def cmd_login(args):
