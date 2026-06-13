@@ -26,8 +26,30 @@ jobs:
       run: |
         pyinstaller --onefile --name chunhui-cil ch_cli.py
 
-    - name: Upload Artifact
+    - name: Prepare Portable Package with Built-in Python Runtime
+      shell: pwsh
+      run: |
+        # 创建便携包发布目录
+        New-Item -ItemType Directory -Force -Path dist/chunhui-cil-portable
+        # 下载官方 Windows 64位嵌入式 Python 3.10 运行时发行版
+        Invoke-WebRequest -Uri "https://www.python.org/ftp/python/3.10.11/python-3.10.11-embed-amd64.zip" -OutFile "python-embed.zip"
+        # 解压 Python 解释器至便携目录
+        Expand-Archive -Path "python-embed.zip" -DestinationPath "dist/chunhui-cil-portable"
+        # 拷贝客户端逻辑文件
+        Copy-Item -Path "ch_cli.py" -Destination "dist/chunhui-cil-portable/ch_cli.py"
+        # 写入快捷入口批处理程序，使用相对路径调用内置解释器，并支持参数透传
+        Set-Content -Path "dist/chunhui-cil-portable/chunhui-cil.bat" -Value "@echo off`r`n`"%~dp0python.exe`" `"%~dp0ch_cli.py`" %*"
+        # 清理临时文件
+        Remove-Item -Path "python-embed.zip"
+
+    - name: Upload Single Executable Artifact
       uses: actions/upload-artifact@v4
       with:
         name: chunhui-cil-windows
         path: dist/chunhui-cil.exe
+
+    - name: Upload Built-in Runtime Portable Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: chunhui-cil-portable
+        path: dist/chunhui-cil-portable
