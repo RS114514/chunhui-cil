@@ -1326,24 +1326,23 @@ def get_key_unix():
     old_settings = termios.tcgetattr(fd)
     try:
         tty.setraw(fd)
-        ch = sys.stdin.read(1)
-        if ch == '\x1b':
-            import select
-            rlist, _, _ = select.select([sys.stdin], [], [], 0.05)
-            if rlist:
-                ch2 = sys.stdin.read(1)
-                if ch2 == '[':
-                    rlist, _, _ = select.select([sys.stdin], [], [], 0.05)
-                    if rlist:
-                        ch3 = sys.stdin.read(1)
-                        if ch3 == 'A': return 'up'
-                        if ch3 == 'B': return 'down'
-                        if ch3 == 'C': return 'right'
-                        if ch3 == 'D': return 'left'
+        ch = os.read(fd, 8)
+        if ch == b'\x1b[A':
+            return 'up'
+        elif ch == b'\x1b[B':
+            return 'down'
+        elif ch == b'\x1b[C':
+            return 'right'
+        elif ch == b'\x1b[D':
+            return 'left'
+        elif ch == b'\x1b':
             return 'esc'
-        elif ch in ('\r', '\n'):
+        elif ch in (b'\r', b'\n'):
             return 'enter'
-        return ch
+        try:
+            return ch.decode('utf-8')
+        except:
+            return ''
     finally:
         termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
 
@@ -1505,18 +1504,24 @@ def handle_tui_action(choice):
     getkey()
 
 def run_tui():
+    main_file = os.path.basename(sys.argv[0])
+    if main_file.endswith('.py'):
+        cmd_prefix = f"python3 {main_file}"
+    else:
+        cmd_prefix = main_file
+
     options = [
-        "登录系统 (Import Cookie)",
-        "查询登录状态 (Check Status)",
-        "班级课表查询 (Class Schedule)",
-        "收件箱消息 (Inbox Messages)",
-        "纪律卫生考评 (Hygiene Appraisals)",
-        "教师值周安排 (Teacher Duty)",
-        "校内文章资讯 (Campus News)",
-        "寝室查询与扣分 (Dormitory Info)",
-        "校园失物招领 (Lost & Found)",
-        "文件寄存与提取 (File Station)",
-        "退出程序 (Exit)"
+        ("登录系统 (Import Cookie)", f"{cmd_prefix} login"),
+        ("查询登录状态 (Check Status)", f"{cmd_prefix} status"),
+        ("班级课表查询 (Class Schedule)", f"{cmd_prefix} schedule"),
+        ("收件箱消息 (Inbox Messages)", f"{cmd_prefix} messages"),
+        ("纪律卫生考评 (Hygiene Appraisals)", f"{cmd_prefix} hygiene"),
+        ("教师值周安排 (Teacher Duty)", f"{cmd_prefix} duty"),
+        ("校内文章资讯 (Campus News)", f"{cmd_prefix} news"),
+        ("寝室查询与扣分 (Dormitory Info)", f"{cmd_prefix} bedroom"),
+        ("校园失物招领 (Lost & Found)", f"{cmd_prefix} lostfound"),
+        ("文件寄存与提取 (File Station)", f"{cmd_prefix} file"),
+        ("退出程序 (Exit)", "")
     ]
     
     selected_idx = 0
@@ -1526,11 +1531,12 @@ def run_tui():
         print(f"{C_BOLD}{C_CYAN}=== 春晖中学校园网 CLI/TUI 工具 ==={C_RESET}")
         print("使用 [↑/↓] 键移动光标，[Enter] 键确认选择，也可以输入 1-9 直接跳转\n")
         
-        for idx, option in enumerate(options):
+        for idx, (option, cmd) in enumerate(options):
+            cmd_desc = f" [{cmd}]" if cmd else ""
             if idx == selected_idx:
-                print(f"{C_GREEN}{C_BOLD}  > {option}{C_RESET}")
+                print(f"{C_GREEN}{C_BOLD}  > {option:<36}{C_GREY}{cmd_desc}{C_RESET}")
             else:
-                print(f"    {option}")
+                print(f"    {option:<36}{C_GREY}{cmd_desc}{C_RESET}")
                 
         key = getkey()
         if key == 'up':
