@@ -3,6 +3,7 @@ name: Build and Release Executable
 on:
   push:
     branches: [ main ]
+    tags: [ 'v*' ]
   workflow_dispatch:
 
 permissions:
@@ -66,8 +67,8 @@ jobs:
     - name: Create or Update GitHub Release
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: latest
-        name: Latest Release (Auto Build)
+        tag_name: ${{ github.ref_type == 'tag' && github.ref_name || 'latest' }}
+        name: ${{ github.ref_type == 'tag' && github.ref_name || 'Latest Release (Auto Build)' }}
         body: |
           春晖中学校园网命令行工具最新的 Windows 可执行程序发行版。
           
@@ -75,7 +76,7 @@ jobs:
           - **`chunhui-cil.exe`**: 轻量化单文件可执行文件（双击即可启动命令行，不需要任何 Python 环境）。
           - **`chunhui-cil-portable.zip`**: 内置了官方 Python 运行时的绿色免安装便携版。适用于单文件版因 DLL 缺失报错的主机。解压缩后在 CMD/PowerShell 下运行 `chunhui-cil.bat` 启动。
         draft: false
-        prerelease: true
+        prerelease: ${{ github.ref_type != 'tag' }}
         files: |
           dist/chunhui-cil.exe
           dist/chunhui-cil-portable.zip
