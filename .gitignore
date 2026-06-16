@@ -10,3 +10,7 @@ test_dir/
 scratch/**/*.html
 scratch/**/*.zip
 scratch/**/*.txt
+
+# PyInstaller builds
+build/
+dist/
