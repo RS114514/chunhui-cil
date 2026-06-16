@@ -1,5 +1,10 @@
 # 春晖中学校园网命令行工具 (chunhui-cil)
 
+[![Platform-Windows](https://img.shields.io/badge/platform-Windows-blue)](https://github.com/RS114514/chunhui-cil/releases/tag/latest)
+[![Platform-macOS](https://img.shields.io/badge/platform-macOS-lightgrey)](https://github.com/RS114514/chunhui-cil/releases/tag/latest)
+[![Language-Python](https://img.shields.io/badge/language-Python-3776AB)](https://www.python.org/)
+[![License-MIT](https://img.shields.io/badge/license-MIT-green)](https://github.com/RS114514/chunhui-cil/blob/main/LICENSE)
+
 本项目是专为春晖中学校园网打造的命令行工具（CLI）。无需打开浏览器，即可在终端高效完成邮件查阅、附件下载、值周安排检索、纪律卫生扣分查询、以及文件的寄存与分片上传。
 
 本项目完全采用 Python 标准库实现，**零外部依赖**，具备极佳的兼容性与运行效率。
@@ -17,14 +22,14 @@
     *   **智能附件解析**：自动匹配通知中关联的课件、压缩包或文档等附件。
     *   **一键附件下载**：支持一键将特定消息的附件下载至本地，并可自定义保存目录（支持自动创建不存在的路径）。
 *   **📄 文章资讯与公告 (`news`)**
-    *   支持阅读新闻聚焦(13)、校内公示(19)、值周小结(51)等不同文章栏目的列表，并支持自定义栏目 ID。
+    *   支持阅读新闻聚焦(13), 校内公示(19), 值周小结(51)等不同文章栏目的列表，并支持自定义栏目 ID。
     *   支持在终端直观查阅文章具体正文排版，附带的文档、表格及附件超链接自动保留为可复制形式。
 *   **🧹 纪律卫生查询 (`hygiene`)**
     *   快速检索全校或特定班级的纪律卫生考评打分记录。
     *   支持按页、按详情查询具体扣分项与考评时间。
 *   **🏠 寝室与卫生考评 (`bedroom`)**
     *   **班级寝室检索**：一键获取特定班级分配使用的全部寝室房号。
-    *   **宿舍楼宇考评**：支持对各栋宿舍楼宇（如 1=3号楼，3=5号楼，9=1号楼等）进行指定日期范围内的卫生与纪律考评打分汇总查询，支持仅过滤显示有扣分项的寝室。
+    *   **宿舍楼宇考评**：支持对各栋宿舍楼宇（如 1=3号楼，3=5号楼，9=1号楼等）进行指定日期范围内的卫生与纪律考评打分汇总查询，支持仅过滤显示有扣分项 of 寝室。
 *   **📅 值周排班检索 (`duty`)**
     *   **当前周高亮**：默认模式下一键高亮输出当前星期的行政值周、组员以及值周班级。
     *   **全局值周表**：支持使用 `--all` 列出整个学期所有周次的值周总表。
@@ -151,25 +156,25 @@ python3 ch_cli.py login
 
 ---
 
-## 💻 Windows 独立运行免环境版（自带 Python 运行时）
+## 💻 独立运行免环境版（自带 Python 运行时）
 
-本项目支持在免 Python 环境依赖的 Windows 主机上直接开箱即用，提供两种部署方式：
+本项目支持在免 Python 环境依赖的 Windows/macOS 主机上直接开箱即用：
 
 ### 1. 绿色便携版（推荐，百分百内置独立 Python 运行时）
 本版本专为没有安装任何 Python 解释器、且可能缺少 MSVC++ 运行依赖库的 Windows 主机设计。它直接封装了官方纯净的嵌入式 Python 运行时解释器，防误报且 100% 独立于系统环境。
 - 前往 GitHub 仓库的 **Releases**（发布）页面。
 - 在最新的 `Latest Release` 下，直接下载 **`chunhui-cil-portable.zip`**。
-- 将压缩包完整解压至任意目录，双击或在命令行（CMD/PowerShell）中运行目录下的 `chunhui-cil.bat` 即可直接使用：
+- 将压缩包完整解压至任意目录，双击或在命令行中运行目录下的 `chunhui-cil.bat` 即可直接使用：
   ```cmd
   chunhui-cil.bat messages
   ```
 
-### 2. 单文件版 (`chunhui-cil.exe`)
-由 PyInstaller 编译的单个独立 EXE 文件，轻量化。
-- 前往 GitHub 仓库的 **Releases**（发布）页面，直接下载 **`chunhui-cil.exe`** 即可直接独立使用。
+### 2. 单文件版 
+- **Windows 用户**：前往 GitHub 仓库的 **Releases** 页面，直接下载 **`chunhui-cil.exe`** 即可。
+- **macOS 用户**：下载 **`chunhui-cil-mac.zip`**，解压后在终端下直接运行 `chunhui-cil` 可执行程序即可。
 
-### 3. 在 Windows 本地手动打包
-若要在本地电脑上自行打包成 `.exe`：
+### 3. 在本地手动打包
+若要在本地电脑上自行打包：
 1. 安装 PyInstaller 工具：
    ```bash
    pip install pyinstaller
@@ -178,10 +183,26 @@ python3 ch_cli.py login
    ```bash
    pyinstaller --onefile --name chunhui-cil ch_cli.py
    ```
-3. 打包完成后，即可在 `dist/` 目录下得到 `chunhui-cil.exe`。
+3. 打包完成后，即可在 `dist/` 目录下得到生成的可执行程序。
 
 ---
 
 ## ⚙️ 网络健壮性说明
 *   本工具在底层 `make_request()` 请求中嵌入了 `10 秒` 超时防护。
 *   针对校园网偶发的 `502 Bad Gateway` 或 `504 Gateway Timeout` 异常，内置了最多 `3 次` 的自动延迟重试机制，大幅提升了在网络不稳定环境下的运行成功率。
+
+---
+
+## 📅 更新日志
+
+### [v1.2.0] - 2026-06-17
+#### 🎨 核心解析器重构
+- **表格对齐优化**：在底层 `HTMLToMarkdown` 解析器中引入了基于 `unicodedata.east_asian_width` 的 `get_visual_width` 自适应宽度对齐算法，自动按中英文真实视觉宽度使用等宽空格对齐表格。
+- **重构**：修复了在解析 HTML 表格转 Markdown 时的排版错位问题，支持输出高品质的等宽 Markdown 表格网格。
+- **健壮性**：清除了部分合并冲突遗留的语法残缺与缩进报错，保证打包兼容性。
+
+---
+
+## 📄 开源协议
+
+本项目基于 **[MIT License](LICENSE)** 协议开源。
