@@ -551,6 +551,17 @@ def extract_attachment_links(html_content):
                 attachment_links.append(full_url)
     return attachment_links
 
+def sanitize_output_filename(filename, fallback):
+    if filename is None:
+        filename = ""
+    filename = urllib.parse.unquote(str(filename)).replace("\x00", "").strip()
+    filename = filename.replace("\\", "/")
+    parts = [part for part in filename.split("/") if part not in ("", ".", "..")]
+    safe_name = parts[-1] if parts else ""
+    if not safe_name:
+        safe_name = fallback
+    return safe_name
+
 def download_attachments(attachment_links, out_dir="."):
     if not attachment_links:
         log_warn("该详情页面中未检测到任何可供下载的附件或多媒体。")
@@ -559,9 +570,7 @@ def download_attachments(attachment_links, out_dir="."):
     log_info(f"发现 {len(attachment_links)} 个可供下载的文件，开始下载...")
     for i, att_url in enumerate(attachment_links):
         filename = att_url.split('/')[-1].split('?')[0]
-        filename = urllib.parse.unquote(filename)
-        if not filename:
-            filename = f"attachment_{i+1}"
+        filename = sanitize_output_filename(filename, f"attachment_{i+1}")
         
         if out_dir != ".":
             os.makedirs(out_dir, exist_ok=True)
@@ -1256,6 +1265,7 @@ def cmd_file_download(password, out_dir="."):
             return
             
         download_url = f"/static/fileaccess/{file_path_name}"
+        file_name = sanitize_output_filename(file_name, "downloaded_file")
         
         out_path = out_dir if out_dir else "."
         if out_path != ".":

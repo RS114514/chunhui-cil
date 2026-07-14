@@ -16,6 +16,19 @@ def out_json(success, data):
     print(json.dumps({"success": success, "data": data}, ensure_ascii=False))
     sys.exit(0)
 
+def require_args(cmd, min_args, usage):
+    if len(sys.argv) < min_args:
+        out_json(False, f"参数错误: 用法 {usage}")
+
+def parse_grade(grade):
+    try:
+        value = int(grade)
+    except (TypeError, ValueError):
+        out_json(False, "参数错误: 年级必须是数字")
+    if value not in (1, 2, 3):
+        out_json(False, "参数错误: 年级必须是 1、2 或 3")
+    return value
+
 def bridge_login(cookie):
     sessionid = ""
     csrftoken = ""
@@ -205,7 +218,7 @@ def bridge_hygiene_detail(record_id):
     })
 
 def bridge_bedroom_class(grade, class_name):
-    res = ch_cli.find_class_id(int(grade), class_name)
+    res = ch_cli.find_class_id(parse_grade(grade), class_name)
     if not res:
         out_json(False, f"未找到匹配班级 \"{class_name}\"")
     class_id, class_name = res
@@ -383,30 +396,38 @@ def main():
     
     # Check login first if required, but status and login endpoints don't need auth check
     if cmd == "login":
+        require_args(cmd, 3, "login <cookie>")
         bridge_login(sys.argv[2])
     elif cmd == "status":
         bridge_status()
     elif cmd == "messages":
         bridge_messages(sys.argv[2] if len(sys.argv) > 2 else "1")
     elif cmd == "message_detail":
+        require_args(cmd, 3, "message_detail <msg_id>")
         bridge_message_detail(sys.argv[2])
     elif cmd == "news":
+        require_args(cmd, 3, "news <column_id> [page]")
         bridge_news(sys.argv[2], sys.argv[3] if len(sys.argv) > 3 else "1")
     elif cmd == "news_detail":
+        require_args(cmd, 3, "news_detail <article_id>")
         bridge_news_detail(sys.argv[2])
     elif cmd == "hygiene":
         bridge_hygiene(sys.argv[2] if len(sys.argv) > 2 else "1")
     elif cmd == "hygiene_detail":
+        require_args(cmd, 3, "hygiene_detail <record_id>")
         bridge_hygiene_detail(sys.argv[2])
     elif cmd == "bedroom_class":
+        require_args(cmd, 4, "bedroom_class <grade> <class_name>")
         bridge_bedroom_class(sys.argv[2], sys.argv[3])
     elif cmd == "bedroom_hygiene":
+        require_args(cmd, 5, "bedroom_hygiene <dorm> <start> <end> [show_all]")
         bridge_bedroom_hygiene(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5] if len(sys.argv) > 5 else "false")
     elif cmd == "duty":
         bridge_duty(sys.argv[2] if len(sys.argv) > 2 else None, sys.argv[3] == "true" if len(sys.argv) > 3 else False)
     elif cmd == "lostfound":
         bridge_lostfound(sys.argv[2] if len(sys.argv) > 2 else "1")
     elif cmd == "lostfound_detail":
+        require_args(cmd, 3, "lostfound_detail <item_id>")
         bridge_lostfound_detail(sys.argv[2])
     else:
         out_json(False, f"未知命令: {cmd}")
