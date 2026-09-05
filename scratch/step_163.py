@@ -1,2 +1,18 @@
-"#!/usr/bin/env python3\n# -*- coding: utf-8 -*-\n\nimport sys\nimport os\nimport json\nimport re\nimport urllib.request\nimport urllib.parse\nimport uuid\nimport time\nimport argparse\n\nBASE_URL = \"http://10.181.200.3\"\nSESSION_FILE = os.path.expanduser(\"~/.ch_cli_session.json\")\n\n# Colors\nC_RESET = \"\\033[0m\"\nC_BOLD = \"\\033[1m\"\nC_RED = \"\\033[31m\"\nC_GREEN = \"\\033[32m\"\nC_YELLOW = \"\\033[33m\"\nC_BLUE = \"\\033[34m\"\nC_MAGENTA = \"\\033[35m\"\nC_CYAN = \"\\033[36m\"\nC_GREY = \"\\033[90m\"\n\ndef log_success(msg):\n    print(f\"{C_GREEN}{C_BOLD}[✓] {msg}{C_RESET}\")\n\ndef log_info(msg):\n    print(f\"{C_CYAN}[i] {msg}{C_RESET}\")\n\ndef log_warn(msg):\n    print(f\"{C_YELLOW}[!] {msg}{C_RESET}\")\n\ndef log_error(msg):\n    print(f\"{C_RED}{C_BOLD}[✗] {msg}{C_RESET}\")\n\ndef load_session():\n    if os.path.exists(SESSION_FILE):\n        try:\n            with open(SESSION_FILE, \"r\", encoding=\"utf-8\") as f:\n                return json.load(f)\n        except:\n            pass\n    return {}\n\ndef save_session(session):\n    try:\n        with open(SESSION_FILE, \"w\", encoding=\"utf-8\") as f:\n            json.dump(session, f, ensure_ascii=False, indent=2)\n        return True\n    except Exception as e:\n        log_error(f\"保存会话文件失败: {e}\")\n        return False\n\ndef make_request(url_path, method=\"GET\", data=None, headers=None, follow_redirects=False):\n    url = f\"{BASE_URL}{url_path}\" if url_path.startswith(\"/\") else url_path\n    if headers is None:\n        headers = {}\n    \n    headers[\"User-Agent\"] = \"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36\"\n    \n    cookies = load_session()\n    cookie_items = [f\"{k}={v}\" for k, v in cookies.items() if v]\n    if cookie_items:\n        headers[\"Cookie\"] = \"; \".join(cookie_items)\n        \n    if method == \"POST\" and \"csrftoken\" in cookies:\n        headers[\"X-CSRFToken\"] = cookies[\"csrftoken\"]\n        headers[\"
-<truncated 4123 bytes>
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+"""Temporary placeholder for a previously corrupted scratch script.
+
+The original file content was stored in an invalid escaped-string form and
+caused `compileall` to fail for the whole workspace. Keeping this placeholder
+preserves the path while making the scratch directory syntactically valid.
+"""
+
+
+def main():
+    print("step_163.py contained corrupted scratch content and has been disabled.")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -52,6 +52,10 @@ def save_session(session):
     try:
         with open(SESSION_FILE, "w", encoding="utf-8") as f:
             json.dump(session, f, ensure_ascii=False, indent=2)
+        try:
+            os.chmod(SESSION_FILE, 0o600)
+        except Exception:
+            pass
         return True
     except Exception as e:
         log_error(f"保存会话文件失败: {e}")
@@ -61,13 +65,14 @@ def make_request(url_path, method="GET", data=None, headers=None, follow_redirec
     url = f"{BASE_URL}{url_path}" if url_path.startswith("/") else url_path
     try:
         parsed = urllib.parse.urlparse(url)
-        encoded_path = urllib.parse.quote(parsed.path)
+        encoded_path = urllib.parse.quote(urllib.parse.unquote(parsed.path), safe='/:@&=+$,')
+        encoded_query = urllib.parse.quote(urllib.parse.unquote(parsed.query), safe='/:@&=+$,?%')
         url = urllib.parse.urlunparse((
             parsed.scheme,
             parsed.netloc,
             encoded_path,
             parsed.params,
-            parsed.query,
+            encoded_query,
             parsed.fragment
         ))
     except Exception:
@@ -221,10 +226,9 @@ class HTMLToMarkdown(HTMLParser):
         line = self.current_line.strip()
         if line:
             self.output.append(self.current_line.rstrip())
-            self.current_line = ""
-        elif self.current_line == "":
-            if self.output and self.output[-1] != "":
-                self.output.append("")
+        elif self.output and self.output[-1] != "":
+            self.output.append("")
+        self.current_line = ""
 
     def handle_starttag(self, tag, attrs):
         tag = tag.lower()
@@ -551,6 +555,17 @@ def extract_attachment_links(html_content):
                 attachment_links.append(full_url)
     return attachment_links
 
+def sanitize_output_filename(filename, fallback):
+    if filename is None:
+        filename = ""
+    filename = urllib.parse.unquote(str(filename)).replace("\x00", "").strip()
+    filename = filename.replace("\\", "/")
+    parts = [part for part in filename.split("/") if part not in ("", ".", "..")]
+    safe_name = parts[-1] if parts else ""
+    if not safe_name:
+        safe_name = fallback
+    return safe_name
+
 def download_attachments(attachment_links, out_dir="."):
     if not attachment_links:
         log_warn("该详情页面中未检测到任何可供下载的附件或多媒体。")
@@ -559,9 +574,7 @@ def download_attachments(attachment_links, out_dir="."):
     log_info(f"发现 {len(attachment_links)} 个可供下载的文件，开始下载...")
     for i, att_url in enumerate(attachment_links):
         filename = att_url.split('/')[-1].split('?')[0]
-        filename = urllib.parse.unquote(filename)
-        if not filename:
-            filename = f"attachment_{i+1}"
+        filename = sanitize_output_filename(filename, f"attachment_{i+1}")
         
         if out_dir != ".":
             os.makedirs(out_dir, exist_ok=True)
@@ -698,6 +711,8 @@ def parse_teachers_and_display(html_content):
                 print(f"  {row_str}")
 
 def find_class_id(grade_id, class_query):
+    if class_query is None or not str(class_query).strip():
+        return None
     status, body, _ = make_request("/subjectArrangement/getClassFromGradeForSelect/", method="POST", data={"theGradeID": grade_id})
     if status != 200:
         log_error(f"无法获取班级列表。HTTP Code: {status}, Body: {body.decode('utf-8', errors='ignore')}")
@@ -1166,6 +1181,9 @@ def cmd_file_upload(file_path):
     if not os.path.exists(file_path):
         log_error(f"本地文件不存在: {file_path}")
         return
+    if not os.path.isfile(file_path):
+        log_error(f"指定路径不是文件: {file_path}")
+        return
         
     filename = os.path.basename(file_path)
     file_size = os.path.getsize(file_path)
@@ -1256,6 +1274,7 @@ def cmd_file_download(password, out_dir="."):
             return
             
         download_url = f"/static/fileaccess/{file_path_name}"
+        file_name = sanitize_output_filename(file_name, "downloaded_file")
         
         out_path = out_dir if out_dir else "."
         if out_path != ".":
@@ -1266,9 +1285,12 @@ def cmd_file_download(password, out_dir="."):
         
         status_dl, body_dl, _ = make_request(download_url, method="GET")
         if status_dl == 200:
-            with open(target_path, "wb") as f_dl:
-                f_dl.write(body_dl)
-            log_success(f"文件已成功保存至: {target_path} (大小: {len(body_dl)} 字节)")
+            try:
+                with open(target_path, "wb") as f_dl:
+                    f_dl.write(body_dl)
+                log_success(f"文件已成功保存至: {target_path} (大小: {len(body_dl)} 字节)")
+            except Exception as e_dl:
+                log_error(f"保存文件 {target_path} 失败: {e_dl}")
         else:
             log_error(f"下载文件失败 (HTTP Code: {status_dl})")
             
@@ -1368,6 +1390,35 @@ def cmd_news(args):
         print(f"      {C_BLUE}┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄{C_RESET}")
     print(f"{C_GREY}提示: 使用 `python3 ch_cli.py news --show <文章ID>` 阅读正文内容。{C_RESET}\n")
 
+DORM_MAPPING = {
+    "1": "3号楼", "2": "4号楼", "3": "5号楼", "4": "6号楼",
+    "5": "7号楼", "6": "8号楼", "7": "9号楼", "8": "10号楼", "9": "11号楼"
+}
+
+def resolve_dorm(dorm_input):
+    s = str(dorm_input).strip() if dorm_input is not None else ""
+    if not s:
+        return "1", DORM_MAPPING["1"]
+        
+    if s in DORM_MAPPING:
+        return s, DORM_MAPPING[s]
+        
+    for d_id, d_name in sorted(DORM_MAPPING.items(), key=lambda x: len(x[1]), reverse=True):
+        if d_name in s or s in d_name:
+            return d_id, d_name
+            
+    m = re.search(r'\d+', s)
+    if m:
+        num = m.group(0)
+        target_building = f"{num}号楼"
+        for d_id, d_name in DORM_MAPPING.items():
+            if d_name == target_building:
+                return d_id, d_name
+        if num in DORM_MAPPING:
+            return num, DORM_MAPPING[num]
+            
+    return s, DORM_MAPPING.get(s, f"未知楼宇(ID:{s})")
+
 def cmd_bedroom(args):
     if args.action == "class":
         grade = args.grade
@@ -1400,18 +1451,7 @@ def cmd_bedroom(args):
             log_warn("未查到该班级的寝室分配数据。")
             
     elif args.action == "hygiene":
-        dorm_mapping = {
-            "1": "3号楼", "2": "4号楼", "3": "5号楼", "4": "6号楼", "5": "7号楼", "6": "8号楼", "7": "9号楼", "8": "10号楼", "9": "11号楼"
-        }
-        
-        # 楼宇输入映射
-        dorm_id = args.dorm
-        for d_id, d_name in dorm_mapping.items():
-            if d_id in args.dorm or d_name in args.dorm:
-                dorm_id = d_id
-                break
-                
-        dorm_name = dorm_mapping.get(dorm_id, f"未知楼宇(ID:{dorm_id})")
+        dorm_id, dorm_name = resolve_dorm(args.dorm)
         
         # 时间范围处理
         start_date = args.start
